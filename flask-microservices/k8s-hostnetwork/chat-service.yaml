@@ -1,0 +1,69 @@
+# Chat Service Deployment - Host Network Mode
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat-service
+  labels:
+    app: chat-service
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chat-service
+  template:
+    metadata:
+      labels:
+        app: chat-service
+        tier: backend
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: chat-service
+        image: localhost/chat-service:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 5003
+          hostPort: 5003
+        env:
+        - name: SECRET_KEY
+          value: "chat-secret-key-production"
+        - name: DATABASE_URL
+          value: "sqlite:///chat.db"
+        - name: AUTH_SERVICE_URL
+          value: "http://localhost:5001"
+        resources:
+          requests:
+            memory: "192Mi"
+            cpu: "150m"
+          limits:
+            memory: "384Mi"
+            cpu: "300m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5003
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5003
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat-service
+  labels:
+    app: chat-service
+spec:
+  type: ClusterIP
+  selector:
+    app: chat-service
+  ports:
+  - port: 5003
+    targetPort: 5003
+    protocol: TCP

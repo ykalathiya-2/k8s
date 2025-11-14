@@ -1,0 +1,67 @@
+# Auth Service Deployment - Host Network Mode
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  labels:
+    app: auth-service
+    tier: backend
+spec:
+  replicas: 1  # Only 1 replica with hostNetwork to avoid port conflicts
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+        tier: backend
+    spec:
+      hostNetwork: true  # Use host networking to bypass CNI requirement
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: auth-service
+        image: localhost/auth-service:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 5001
+          hostPort: 5001
+        env:
+        - name: SECRET_KEY
+          value: "auth-secret-key-production"
+        - name: DATABASE_URL
+          value: "sqlite:///auth.db"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5001
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5001
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  labels:
+    app: auth-service
+spec:
+  type: ClusterIP
+  selector:
+    app: auth-service
+  ports:
+  - port: 5001
+    targetPort: 5001
+    protocol: TCP

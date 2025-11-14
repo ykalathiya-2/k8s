@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  auth-service:
+    build: ./auth-service
+    container_name: auth-service
+    ports:
+      - "5001:5001"
+    environment:
+      - SECRET_KEY=auth-secret-key
+      - DATABASE_URL=sqlite:///auth.db
+    networks:
+      - microservices
+
+  user-service:
+    build: ./user-service
+    container_name: user-service
+    ports:
+      - "5002:5002"
+    environment:
+      - SECRET_KEY=user-secret-key
+      - DATABASE_URL=sqlite:///users.db
+      - AUTH_SERVICE_URL=http://auth-service:5001
+    depends_on:
+      - auth-service
+    networks:
+      - microservices
+
+  chat-service:
+    build: ./chat-service
+    container_name: chat-service
+    ports:
+      - "5003:5003"
+    environment:
+      - SECRET_KEY=chat-secret-key
+      - DATABASE_URL=sqlite:///chat.db
+      - AUTH_SERVICE_URL=http://auth-service:5001
+      - USER_SERVICE_URL=http://user-service:5002
+    depends_on:
+      - auth-service
+      - user-service
+    networks:
+      - microservices
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "5000:5000"
+    environment:
+      - SECRET_KEY=gateway-secret-key
+      - AUTH_SERVICE_URL=http://auth-service:5001
+      - USER_SERVICE_URL=http://user-service:5002
+      - CHAT_SERVICE_URL=http://chat-service:5003
+    depends_on:
+      - auth-service
+      - user-service
+      - chat-service
+    networks:
+      - microservices
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "8080:8080"
+    depends_on:
+      - api-gateway
+    networks:
+      - microservices
+
+networks:
+  microservices:
+    driver: bridge

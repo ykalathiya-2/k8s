@@ -1,0 +1,70 @@
+# API Gateway Deployment - Host Network Mode
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-gateway
+  labels:
+    app: api-gateway
+    tier: gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+        tier: gateway
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      containers:
+      - name: api-gateway
+        image: localhost/api-gateway:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 5000
+          hostPort: 5000
+        env:
+        - name: AUTH_SERVICE_URL
+          value: "http://localhost:5001"
+        - name: USER_SERVICE_URL
+          value: "http://localhost:5002"
+        - name: CHAT_SERVICE_URL
+          value: "http://localhost:5003"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-gateway
+  labels:
+    app: api-gateway
+spec:
+  type: NodePort
+  selector:
+    app: api-gateway
+  ports:
+  - port: 5000
+    targetPort: 5000
+    nodePort: 30000
+    protocol: TCP

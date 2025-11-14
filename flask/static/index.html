@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chat — Vanilla + Flask-SocketIO</title>
+  <style>
+    :root{ --accent:#2b87f0; }
+    body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial; margin: 20px; background:#f7f9fc; color:#121212 }
+    .container{ max-width:820px; margin:0 auto; }
+    header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:12px }
+    header h2{ margin:0; font-weight:600 }
+    .controls{ display:flex; gap:8px; align-items:center }
+    .controls input[type="text"]{ padding:6px 8px; border:1px solid #ddd; border-radius:6px }
+    #messages { background:white; border: 1px solid #e2e8f0; height: 360px; overflow-y: auto; padding: 12px; border-radius:8px; box-shadow:0 1px 2px rgba(16,24,40,0.03) }
+    #inputRow { margin-top: 12px; display:flex; gap:8px; align-items:center }
+    #text { flex:1; padding:8px 10px; border-radius:6px; border:1px solid #ddd }
+    #send{ background:var(--accent); color:white; border:none; padding:8px 12px; border-radius:6px; cursor:pointer }
+    .msg { margin: 6px 0; display:flex; gap:10px; align-items:flex-start }
+    .avatar{ width:36px; height:36px; border-radius:999px; flex:0 0 36px; display:flex; align-items:center; justify-content:center; color:white; font-weight:600 }
+    .bubble{ background:#f1f5f9; padding:8px 10px; border-radius:8px; max-width:78%; }
+    .bubble.me{ background:#e6f0ff }
+    .meta{ font-size:12px; color:#475569; margin-bottom:4px }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h2>Chat — Vanilla + Flask-SocketIO</h2>
+      <div class="controls">
+        <label for="username">Name</label>
+        <input id="username" type="text" />
+      </div>
+    </header>
+
+    <div id="messages" aria-live="polite"></div>
+
+    <div id="inputRow">
+      <input id="text" placeholder="Type a message" />
+      <button id="send">Send</button>
+    </div>
+  </div>
+
+  <!-- Socket.IO client from CDN -->
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  <script>
+    const socket = io();
+    const messagesEl = document.getElementById('messages');
+    const input = document.getElementById('text');
+    const sendBtn = document.getElementById('send');
+    const usernameInput = document.getElementById('username');
+
+    function randomName(){
+      const adjs = ['Blue','Sunny','Quiet','Brave','Swift','Mellow','Clever','Lucky'];
+      const nouns = ['Fox','Tiger','Sparrow','Otter','Panda','Hawk','Wolf','Koala'];
+      return adjs[Math.floor(Math.random()*adjs.length)] + nouns[Math.floor(Math.random()*nouns.length)] + Math.floor(Math.random()*90+10);
+    }
+
+    function avatarColor(name){
+      let h=0; for(let i=0;i<name.length;i++) h = (h<<5) - h + name.charCodeAt(i);
+      const hue = Math.abs(h) % 360;
+      return `hsl(${hue} 70% 45%)`;
+    }
+
+    // initialize username (default to 'Yash')
+    if (!localStorage.getItem('chat_name')){
+      localStorage.setItem('chat_name', 'Yash');
+    }
+    usernameInput.value = localStorage.getItem('chat_name') || 'Yash';
+    usernameInput.addEventListener('change', ()=> localStorage.setItem('chat_name', usernameInput.value.trim() || 'Yash'));
+
+    function addMessageObj(msgObj){
+      // msgObj = {name, text, time}
+      const wrap = document.createElement('div');
+      wrap.className = 'msg';
+
+      const av = document.createElement('div');
+      av.className = 'avatar';
+      av.style.background = avatarColor(msgObj.name || 'Anon');
+      av.textContent = (msgObj.name||'A').slice(0,2).toUpperCase();
+
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble' + ((msgObj.me)?' me':'');
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      const t = new Date(msgObj.time || Date.now()).toLocaleTimeString();
+      meta.textContent = `${msgObj.name || 'Anon'} · ${t}`;
+
+      const txt = document.createElement('div');
+      txt.textContent = msgObj.text;
+
+      bubble.appendChild(meta);
+      bubble.appendChild(txt);
+
+      wrap.appendChild(av);
+      wrap.appendChild(bubble);
+      messagesEl.appendChild(wrap);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    socket.on('connect', () => {
+      addMessageObj({name:'[system]', text:'connected to server', time:Date.now()});
+    });
+
+    socket.on('message', (raw) => {
+      // support object or string
+      if (typeof raw === 'string'){
+        addMessageObj({name:'User', text:raw, time:Date.now()});
+      } else {
+        addMessageObj(raw);
+      }
+    });
+
+    sendBtn.addEventListener('click', () => {
+      const v = input.value.trim();
+      if (!v) return;
+      const name = usernameInput.value.trim() || randomName();
+      const payload = { name, text: v, time: Date.now(), me: true };
+      addMessageObj(payload);
+      // send without me flag
+      socket.send({ name, text: v, time: Date.now() });
+      input.value = '';
+      input.focus();
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendBtn.click();
+    });
+  </script>
+</body>
+</html>
