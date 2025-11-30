@@ -357,9 +357,3 @@ cd flask-microservices
 This project is created for educational purposes as part of a Kubernetes assignment.
 
 ---
-
-<div align="center">
-
-**Built with ❤️ using Flask, Kubernetes, and Microservices Architecture**
-
-</div>
