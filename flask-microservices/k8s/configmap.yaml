@@ -9,11 +9,11 @@ metadata:
     app: flask-chat
     tier: config
 data:
-  # Service URLs (using localhost for hostNetwork mode)
-  AUTH_SERVICE_URL: "http://localhost:5001"
-  USER_SERVICE_URL: "http://localhost:5002"
-  CHAT_SERVICE_URL: "http://localhost:5003"
-  API_GATEWAY_URL: "http://localhost:5000"
+  # Service URLs (using K8s DNS)
+  AUTH_SERVICE_URL: "http://auth-service:5001"
+  USER_SERVICE_URL: "http://user-service:5002"
+  CHAT_SERVICE_URL: "http://chat-service:5003"
+  API_GATEWAY_URL: "http://api-gateway:5000"
   
   # Flask configuration
   FLASK_ENV: "production"

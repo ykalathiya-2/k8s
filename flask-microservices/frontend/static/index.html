@@ -236,8 +236,10 @@
 
     <script>
         // Configuration
-        const API_URL = window.location.origin.replace('8080', '5000'); // API Gateway
-        const CHAT_URL = window.location.origin.replace('8080', '5003'); // Chat Service
+        // Use port 5000 for API Gateway (works with both port-forward and direct access)
+        const API_URL = window.location.protocol + '//' + window.location.hostname + ':5000';
+        // Connect directly to chat service for WebSocket (port 5003)
+        const CHAT_URL = window.location.protocol + '//' + window.location.hostname + ':5003';
         let token = localStorage.getItem('token');
         let currentUser = null;
         let currentRoom = null;
