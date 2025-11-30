@@ -1,4 +1,4 @@
-# API Gateway Deployment - Host Network Mode
+# API Gateway Deployment - Host Network Mode (Production)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,6 +6,7 @@ metadata:
   labels:
     app: api-gateway
     tier: gateway
+    version: v1
 spec:
   replicas: 1
   selector:
@@ -16,6 +17,7 @@ spec:
       labels:
         app: api-gateway
         tier: gateway
+        version: v1
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
@@ -27,12 +29,36 @@ spec:
         - containerPort: 5000
           hostPort: 5000
         env:
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: gateway-secret-key
         - name: AUTH_SERVICE_URL
-          value: "http://localhost:5001"
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: AUTH_SERVICE_URL
         - name: USER_SERVICE_URL
-          value: "http://localhost:5002"
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: USER_SERVICE_URL
         - name: CHAT_SERVICE_URL
-          value: "http://localhost:5003"
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: CHAT_SERVICE_URL
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: LOG_LEVEL
+        - name: CORS_ORIGINS
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: CORS_ORIGINS
         resources:
           requests:
             memory: "128Mi"

@@ -1,4 +1,4 @@
-# Chat Service Deployment - Host Network Mode
+# Chat Service Deployment - Host Network Mode (Production)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,6 +6,7 @@ metadata:
   labels:
     app: chat-service
     tier: backend
+    version: v1
 spec:
   replicas: 1
   selector:
@@ -16,6 +17,7 @@ spec:
       labels:
         app: chat-service
         tier: backend
+        version: v1
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
@@ -28,11 +30,30 @@ spec:
           hostPort: 5003
         env:
         - name: SECRET_KEY
-          value: "chat-secret-key-production"
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: chat-secret-key
         - name: DATABASE_URL
-          value: "sqlite:///chat.db"
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: DATABASE_URL
         - name: AUTH_SERVICE_URL
-          value: "http://localhost:5001"
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: AUTH_SERVICE_URL
+        - name: USER_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: USER_SERVICE_URL
+        - name: FLASK_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: FLASK_ENV
         resources:
           requests:
             memory: "192Mi"

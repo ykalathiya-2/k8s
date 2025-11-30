@@ -1,4 +1,4 @@
-# Auth Service Deployment
+# Auth Service Deployment - Production Ready
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,47 +6,72 @@ metadata:
   labels:
     app: auth-service
     tier: backend
+    version: v1
 spec:
   replicas: 2
   selector:
     matchLabels:
       app: auth-service
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   template:
     metadata:
       labels:
         app: auth-service
         tier: backend
+        version: v1
     spec:
       containers:
       - name: auth-service
-        image: auth-service:latest
+        image: localhost/auth-service:latest
         imagePullPolicy: Never
         ports:
         - containerPort: 5001
+          name: http
         env:
         - name: SECRET_KEY
-          value: "auth-secret-key-production"
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: auth-secret-key
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: jwt-secret-key
         - name: DATABASE_URL
           value: "sqlite:///auth.db"
+        - name: FLASK_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: FLASK_ENV
         resources:
           requests:
             memory: "128Mi"
             cpu: "100m"
           limits:
             memory: "256Mi"
-            cpu: "200m"
+            cpu: "300m"
         livenessProbe:
           httpGet:
             path: /health
             port: 5001
-          initialDelaySeconds: 30
-          periodSeconds: 10
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
         readinessProbe:
           httpGet:
             path: /health
             port: 5001
           initialDelaySeconds: 5
-          periodSeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 3
+          successThreshold: 1
 ---
 apiVersion: v1
 kind: Service
@@ -54,11 +79,13 @@ metadata:
   name: auth-service
   labels:
     app: auth-service
+    tier: backend
 spec:
+  type: ClusterIP
   selector:
     app: auth-service
   ports:
   - port: 5001
     targetPort: 5001
     protocol: TCP
-  type: ClusterIP
+    name: http

@@ -4,10 +4,12 @@ Routes requests to appropriate microservices
 """
 
 from flask import Flask, request, jsonify, Response
+from flask_cors import CORS
 import requests
 import os
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 # Configuration
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'gateway-secret-key')

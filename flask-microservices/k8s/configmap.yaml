@@ -1,0 +1,46 @@
+# ConfigMap for Flask Microservices
+# Contains non-sensitive configuration data
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  labels:
+    app: flask-chat
+    tier: config
+data:
+  # Service URLs (using localhost for hostNetwork mode)
+  AUTH_SERVICE_URL: "http://localhost:5001"
+  USER_SERVICE_URL: "http://localhost:5002"
+  CHAT_SERVICE_URL: "http://localhost:5003"
+  API_GATEWAY_URL: "http://localhost:5000"
+  
+  # Flask configuration
+  FLASK_ENV: "production"
+  FLASK_DEBUG: "false"
+  
+  # Database configuration
+  DATABASE_TYPE: "sqlite"
+  DATABASE_URL: "sqlite:///app.db"
+  
+  # Logging configuration
+  LOG_LEVEL: "INFO"
+  
+  # CORS configuration
+  CORS_ORIGINS: "*"
+  
+  # Application settings
+  MAX_CONTENT_LENGTH: "16777216"  # 16MB max upload
+  SESSION_TIMEOUT: "3600"  # 1 hour
+---
+# ConfigMap for frontend configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+  labels:
+    app: flask-chat
+    tier: frontend
+data:
+  API_URL: "http://localhost:5000"
+  CHAT_URL: "http://localhost:5003"

@@ -1,4 +1,4 @@
-# Frontend Deployment - Host Network Mode
+# Frontend Deployment - Host Network Mode (Production)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,6 +6,7 @@ metadata:
   labels:
     app: frontend
     tier: frontend
+    version: v1
 spec:
   replicas: 1
   selector:
@@ -16,6 +17,7 @@ spec:
       labels:
         app: frontend
         tier: frontend
+        version: v1
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
@@ -27,8 +29,16 @@ spec:
         - containerPort: 8080
           hostPort: 8080
         env:
-        - name: API_GATEWAY_URL
-          value: "http://localhost:5000"
+        - name: API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: frontend-config
+              key: API_URL
+        - name: CHAT_URL
+          valueFrom:
+            configMapKeyRef:
+              name: frontend-config
+              key: CHAT_URL
         resources:
           requests:
             memory: "64Mi"

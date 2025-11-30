@@ -1,4 +1,4 @@
-# Auth Service Deployment - Host Network Mode
+# Auth Service Deployment - Host Network Mode (Production)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,6 +6,7 @@ metadata:
   labels:
     app: auth-service
     tier: backend
+    version: v1
 spec:
   replicas: 1  # Only 1 replica with hostNetwork to avoid port conflicts
   selector:
@@ -16,6 +17,7 @@ spec:
       labels:
         app: auth-service
         tier: backend
+        version: v1
     spec:
       hostNetwork: true  # Use host networking to bypass CNI requirement
       dnsPolicy: ClusterFirstWithHostNet
@@ -28,9 +30,20 @@ spec:
           hostPort: 5001
         env:
         - name: SECRET_KEY
-          value: "auth-secret-key-production"
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: auth-secret-key
         - name: DATABASE_URL
-          value: "sqlite:///auth.db"
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: DATABASE_URL
+        - name: FLASK_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: FLASK_ENV
         resources:
           requests:
             memory: "128Mi"

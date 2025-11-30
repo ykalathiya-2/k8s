@@ -1,4 +1,4 @@
-# User Service Deployment - Host Network Mode
+# User Service Deployment - Host Network Mode (Production)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,6 +6,7 @@ metadata:
   labels:
     app: user-service
     tier: backend
+    version: v1
 spec:
   replicas: 1
   selector:
@@ -16,6 +17,7 @@ spec:
       labels:
         app: user-service
         tier: backend
+        version: v1
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
@@ -28,11 +30,25 @@ spec:
           hostPort: 5002
         env:
         - name: SECRET_KEY
-          value: "user-secret-key-production"
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: user-secret-key
         - name: DATABASE_URL
-          value: "sqlite:///users.db"
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: DATABASE_URL
         - name: AUTH_SERVICE_URL
-          value: "http://localhost:5001"
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: AUTH_SERVICE_URL
+        - name: FLASK_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: FLASK_ENV
         resources:
           requests:
             memory: "128Mi"
